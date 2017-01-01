@@ -29,38 +29,44 @@ module.exports = function() {
     }).then(function (page) {
         page.open("https://www.tumblr.com/explore/trending").then(function (status) {
             console.log("Opened tumblr?", status);
-            page.property('content').then(function (content) {
-                console.log(content.match(/class="post_tag "/g).length);
-            });
             // continue scraping tags until a predefined max is reached
             setInterval(function (page) {
-                page.evaluate(function () {
-                    // get all available tags
-                    var elms = document.querySelectorAll('div.posts-holder article section.post_tags div.post_tags_inner a.post_tag');
-                    // count up all occurrences of tags
-                    var tags = {};
-                    for (var i = 0; i < elms.length; i++) {
-                        if(elms[i]) {
-                            var key = elms[i].getAttribute('data-tag');
-                            if (tags[key] === undefined) {
-                                tags[key] = 1;
-                            } else {
-                                tags[key] = tags[key] + 1;
+                page.property('content').then(function (content) {
+                    var count = content.match(/class="post_tag "/g).length
+                    // console.log(count);
+                    if (count > 1000) {
+                        page.evaluate(function () {
+                            // get all available tags
+                            var elms = document.querySelectorAll('div.posts-holder article section.post_tags div.post_tags_inner a.post_tag');
+                            // count up all occurrences of tags
+                            var tags = {};
+                            for (var i = 0; i < elms.length; i++) {
+                                if(elms[i]) {
+                                    var key = elms[i].getAttribute('data-tag');
+                                    if (tags[key] === undefined) {
+                                        tags[key] = 1;
+                                    } else {
+                                        tags[key] = tags[key] + 1;
+                                    }
+                                }
                             }
-                        }
-                    }
-                    // scroll to load more trending posts
-                    window.document.body.scrollTop = document.body.scrollHeight;
-                    return tags;
-                }).then(function (tags) {
-                    var sortedTags = sortTags(tags);
-                    if (sortedTags.total > 1000) {
-                        console.log(sortedTags.total);
-                        console.log('done');
-                        phInstance.exit();
+                            return tags;
+                        }).then(function (tags) {
+                            var sortedTags = sortTags(tags);
+                            if (sortedTags.total > 1000) {
+                                // console.log(sortedTags.total);
+                                console.log('done');
+                                phInstance.exit();
+                            }
+                        });
+                    } else {
+                        page.evaluate(function () {
+                            // scroll to load more trending posts
+                            window.document.body.scrollTop = document.body.scrollHeight;
+                        });
                     }
                 });
-            }, 500, page);
+            }, 1200, page);
         });
     }).catch(function (error) {
         console.log(error);
